@@ -13,6 +13,8 @@ import io.flutter.plugin.common.PluginRegistry.Registrar;
 
 import android.os.Build;
 import android.os.Bundle;
+import  java.util.Map;
+import java.util.HashMap;
 
 import android.content.pm.PackageManager;
 import android.Manifest;
@@ -40,10 +42,12 @@ public class PitchdetectorPlugin implements FlutterPlugin, MethodCallHandler {
   private boolean replySubmitted = false;
 
   private int SAMPLE_RATE = 22050;
+  private int SAMPLE_SIZE = 2048;
+
   AudioRecord  audioRecorder = null;
-  private short[] audioData = new short[2048];
+  private short[] audioData = new short[SAMPLE_SIZE];
   private Handler mainHandler =  new Handler();
-  PitchHandler pitchHandler = new PitchHandler(SAMPLE_RATE);
+  PitchHandler pitchHandler = new PitchHandler(SAMPLE_RATE , SAMPLE_SIZE);
   private float pitch = 0;
 
   @Override
@@ -76,6 +80,9 @@ public class PitchdetectorPlugin implements FlutterPlugin, MethodCallHandler {
       case "startRecording":
         startRecord(result);
         break;
+      case "stopRecording" : 
+        stopRecording();
+        break;
       default : 
         result.notImplemented();
         break;
@@ -94,6 +101,7 @@ public class PitchdetectorPlugin implements FlutterPlugin, MethodCallHandler {
       2048);
   }
   private void startRecord(final Result result){
+    recording = true;
     initRecorder();
     audioRecorder.startRecording();
     findPitch(audioRecorder);
@@ -101,14 +109,16 @@ public class PitchdetectorPlugin implements FlutterPlugin, MethodCallHandler {
   }
 
   private void findPitch(final AudioRecord audioRecorder){
-    Handler uiHandler = new Handler(Looper.getMainLooper());
-    Runnable runnable = new Runnable() {
+    if(recording){
+      Handler uiHandler = new Handler(Looper.getMainLooper());
+      Runnable runnable = new Runnable() {
         public void run() {
           if (audioRecorder.getState() == AudioRecord.STATE_INITIALIZED) {
               //RUN FOR DELAY OF 500ms
-              audioRecorder.read(audioData, 0, 2048);
+              audioRecorder.read(audioData, 0, SAMPLE_SIZE);
               //System.out.println(audioData.toString());
-              float pitchResult =  pitchHandler.getPitch(audioData);
+              float[] samples = pitchHandler.shortToPcmArray(audioData);
+              float pitchResult =  pitchHandler.getPitch(samples);
               try {
                 if(pitchResult != -1.0){
                   channel.invokeMethod("getPitch", pitchResult);
@@ -126,6 +136,8 @@ public class PitchdetectorPlugin implements FlutterPlugin, MethodCallHandler {
       }
     };
     uiHandler.post(runnable);
+    }
+    
   }
   private void stopRecording(){
     recording = false;

@@ -14,18 +14,20 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
   Pitchdetector detector;
+  bool isRecording = false;
+  String pitch;
   @override
   void initState() {
     super.initState();
     detector =  new Pitchdetector();
-    detector.onRecorderStateChanged.listen((event) {
-      print("Event" + event.toString());
+    isRecording = isRecording;
+    detector.onRecorderStateChanged.listen((data) {
+      setState(() {
+        pitch = data["pitch"].toString();
+      });
     });
   }
-
- 
 
   @override
   Widget build(BuildContext context) {
@@ -35,15 +37,33 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: FlatButton(
-              onPressed: startRecording, child: Text("Press Me to start")),
+          child: 
+          Column(
+            children: <Widget>[
+               isRecording ? Text("Pitch is $pitch") :  Text("Press button to start.") ,
+               FlatButton(
+                onPressed: isRecording ?  stopRecording : startRecording, 
+                child:   isRecording ?   Text("Press Me to stop") : Text("Press Me to run") 
+              )
+            ],
+          )
+          
         ),
       ),
     );
   }
 
   void startRecording()  async{
+    setState(() {
+        isRecording = true;
+    });
+    
     await detector.startRecording();
-   
+  }
+  void stopRecording() async {
+     setState(() {
+        isRecording = false;
+    });
+    await detector.stopRecording();
   }
 }

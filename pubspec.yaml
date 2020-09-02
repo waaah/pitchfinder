@@ -1,9 +1,7 @@
 name: pitchdetector
-description: A new flutter plugin project.
-version: 0.0.1
-author:
-homepage:
-
+description: Pitch detection for android (for now).
+version: 0.0.2+1
+homepage: https://example-pet-store.com/newtify
 environment:
   sdk: ">=2.7.0 <3.0.0"
   flutter: ">=1.10.0"

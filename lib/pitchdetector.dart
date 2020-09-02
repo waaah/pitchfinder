@@ -5,10 +5,11 @@ import 'package:permission_handler/permission_handler.dart';
 
 class Pitchdetector {
   static const MethodChannel _channel = const MethodChannel('pitchdetector');
-  static StreamController<Object> _recorderController = StreamController<Object>();
+  static StreamController<Object> _recorderController = StreamController<Map<String , Object>>.broadcast();
+  bool _isRecording = false;
   
-  
-  Stream<Object> get onRecorderStateChanged => _recorderController.stream;
+  Stream<Map<String , Object>> get onRecorderStateChanged => _recorderController.stream;
+  bool get isRecording => _isRecording;
 
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
@@ -16,21 +17,21 @@ class Pitchdetector {
   }
 
   Future<String> recordingCallback() async {}
-
+  
   startRecording() async {
     try {
       await PermissionHandler()
           .requestPermissions([PermissionGroup.microphone]);
       var result = await _channel.invokeMethod('startRecording');
-      // if (_recorderController == null) {
-      //   _recorderController = new StreamController.broadcast();
-      // }
+      _isRecording = true;
       _channel.setMethodCallHandler((MethodCall call) {
         switch (call.method) {
           case "getPitch":
             if (_recorderController != null) {
               print(call.arguments);
-              _recorderController.add(call.arguments);
+              _recorderController.add({
+                "pitch" : call.arguments,
+              });
             } else {
               print("Is not null");
             }
@@ -44,5 +45,10 @@ class Pitchdetector {
     } catch (ex) {
       print(ex);
     }
+  }
+
+  stopRecording() async{
+    _isRecording = false;
+    await _channel.invokeMethod('stopRecording');
   }
 }
